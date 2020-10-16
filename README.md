@@ -6,7 +6,7 @@ Lua-ReactiveX gives Lua the power of Observables, which are data structures that
 
 This is a friendly fork of [RxLua](https://github.com/bjornbytes/RxLua). All credits for initial development go to the original author, [bjornbytes](https://github.com/bjornbytes).
 
-This fork includes some fixes and features contributed by the community. There are also foundational changes here in order to introduce a proper automatic unsubscription mechanism which was missing and caused unexpected behavior in some cases. These changes are heavily inspired by the RxJS internals, and thus RxJS is considered a reference implementation for all future development of Lua-ReactiveX.
+This fork includes some fixes and features contributed by the community. There are also foundational changes here in order to introduce a proper automatic unsubscription mechanism which was missing and caused unexpected behavior in some cases. These changes are heavily inspired by the RxJS (5.x) internals, and thus RxJS is considered a reference implementation for all future development of Lua-ReactiveX.
 
 ## Getting Started
 
