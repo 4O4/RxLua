@@ -1,10 +1,12 @@
+dofile("tools/build.lua")
+
 local docroc = require 'tools/docroc'
 
 io.output('doc/README.md')
 
 io.write('Lua-ReactiveX\n===\n\n')
 
-local comments = docroc.process('reactivex.lua')
+local comments = docroc.process('.tmp/lua-reactivex-portable/reactivex.lua')
 
 -- Generate table of contents
 for _, comment in ipairs(comments) do

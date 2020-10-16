@@ -48,7 +48,7 @@ do
   os.remove(path)
 end
 
-os.execute("mkdir .tmp .tmp/lua-reactivex-portable-luvit .tmp/lua-reactivex-portable")
+os.execute("mkdir -p .tmp/lua-reactivex-portable-luvit .tmp/lua-reactivex-portable")
 
 withFile(".tmp/main.lua", "w", function (file)
   file:write(MAIN)
@@ -71,4 +71,4 @@ withFile(".tmp/lua-reactivex-portable-luvit/reactivex.lua", "w", function (file)
   file:write(table.concat({HEADER, LUVIT_METADATA, amalgOut}, ""))
 end)
 
-os.exit(0)
+-- os.exit(0)
