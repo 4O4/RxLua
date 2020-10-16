@@ -1,34 +1,34 @@
 describe('Observable', function()
   describe('create', function()
-    it('returns an Observable', function()
-      local observable = Rx.Observable.create()
+    local function createObservable(...)
+      return
+    end
+
+    it('works when no subscribe function is passed', function()
+      local observable
+      expect(function () observable = Rx.Observable.create() end).to_not.fail()
       expect(observable).to.be.an(Rx.Observable)
     end)
 
-    it('sets _subscribe to the first argument it was passed', function()
-      local subscribe = function() end
-      local observable = Rx.Observable.create(subscribe)
-      expect(observable._subscribe).to.equal(subscribe)
+    it('works when a subscribe function is passed', function()
+      local observable
+      expect(function () observable = Rx.Observable.create(function () end) end).to_not.fail()
+      expect(observable).to.be.an(Rx.Observable)
     end)
   end)
 
   describe('subscribe', function()
-    it('passes the first argument to _subscribe if it is a table', function()
-      local observable = Rx.Observable.of()
-      local observer = Rx.Observer.create()
-      local function run() observable:subscribe(observer) end
-      expect(spy(observable, '_subscribe', run)).to.equal({{observer}})
+    it('creates a subscription', function ()
+      local observable = Rx.Observable.create(function () end)
+      local sub = observable:subscribe()
+      expect(Rx.util.isa(sub, Rx.Subscription)).to.equal(true)
     end)
 
-    it('creates a new Observer using the first three arguments and passes it to _subscribe if the first argument is not a table', function()
-      local observable = Rx.Observable.of()
-      local a, b, c = function() end, function() end, function() end
-      local function run() observable:subscribe(a, b, c) end
-      local observer = spy(observable, '_subscribe', run)[1][1]
-      expect(observer).to.be.an(Rx.Observer)
-      expect(observer._onNext).to.equal(a)
-      expect(observer._onError).to.equal(b)
-      expect(observer._onCompleted).to.equal(c)
+    it('uses the `subscribe` function if it was provided', function()
+      local subscriptionLogic = spy()
+      local observable = Rx.Observable.create(subscriptionLogic)
+      observable:subscribe()
+      expect(#subscriptionLogic).to.equal(1)
     end)
   end)
 
@@ -55,7 +55,7 @@ describe('Observable', function()
   describe('throw', function()
     it('returns an Observable that produces an error', function()
       local observable = Rx.Observable.throw('message')
-      expect(function() observable:subscribe() end).to.fail()
+      expect(observable).to.produce.error()
     end)
   end)
 
@@ -189,8 +189,10 @@ describe('Observable', function()
       local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
       local onNextA = observableSpy(observable)
       local onNextB = observableSpy(observable)
+
       repeat Rx.scheduler:update()
       until Rx.scheduler:isEmpty()
+
       expect(onNextA).to.equal({{1}, {3}})
       expect(onNextB).to.equal({{2}})
     end)
@@ -204,12 +206,18 @@ describe('Observable', function()
 
       Rx.scheduler = Rx.CooperativeScheduler.create()
       local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
-      local onNextA = observableSpy(observable)
-      local onNextB = observableSpy(observable)
+      local onNextA, onErrorA, onCompletedA = observableSpy(observable)
+      local onNextB, onErrorB, onCompletedB = observableSpy(observable)
+      local onNextC, onErrorC, onCompletedC = observableSpy(observable)
       repeat Rx.scheduler:update()
       until Rx.scheduler:isEmpty()
+
       expect(onNextA).to.equal({{1}, {2}, {3}})
       expect(onNextB).to.equal({{1}, {2}, {3}})
+      expect(onNextC).to.equal({{1}, {2}, {3}})
+      expect(#onCompletedA).to.equal(1)
+      expect(#onCompletedB).to.equal(1)
+      expect(#onCompletedC).to.equal(1)
     end)
   end)
 
@@ -272,14 +280,21 @@ describe('Observable', function()
     end)
 
     it('returns Observables that return subscriptions from their subscribe function', function()
-      local subscription = Rx.Subscription.create()
       local function factory()
         return Rx.Observable.create(function()
-          return subscription
+          return Rx.Subscription.create()
         end)
       end
 
-      expect(Rx.Observable.defer(factory):subscribe()).to.equal(subscription)
+      expect(Rx.Observable.defer(factory):subscribe()).to.be.a(Rx.Subscription)
+
+      local function factory2()
+        return Rx.Observable.create(function()
+          return function () end
+        end)
+      end
+
+      expect(Rx.Observable.defer(factory2):subscribe()).to.be.a(Rx.Subscription)
     end)
   end)
 
@@ -299,6 +314,124 @@ describe('Observable', function()
   end)
 
   describe('dump', function()
+  end)
+
+  describe('automatically unsubscribes on error', function ()
+    describe('when error is emitted during execution of `subscribe` logic', function ()
+      it('and subscribe function returns plain teardown function', function ()
+        local teardownSpy = spy()
+        local observable = Rx.Observable.create(function (observer)
+          observer:onError()
+          return teardownSpy
+        end)
+
+        observable:subscribe()
+        expect(#teardownSpy).to.equal(1)
+      end)
+
+      it('and subscribe function returns Subscription', function ()
+        local teardownSpy = spy()
+        local observable = Rx.Observable.create(function (observer)
+          observer:onError()
+          return Rx.Subscription.create(function ()
+            teardownSpy()
+          end)
+        end)
+
+        observable:subscribe()
+        expect(#teardownSpy).to.equal(1)
+      end)
+    end)
+
+    describe('when error is emitted later after subscription logic has been fully executed', function ()
+      it('and subscribe function returns plain teardown function', function ()
+        local teardownSpy = spy()
+        local observer
+
+        local observable = Rx.Observable.create(function (o)
+          observer = o
+          return teardownSpy
+        end)
+
+        observable:subscribe()
+        observer:onError()
+        expect(#teardownSpy).to.equal(1)
+      end)
+
+      it('and subscribe function returns Subscription', function ()
+        local teardownSpy = spy()
+        local observer
+
+        local observable = Rx.Observable.create(function (o)
+          observer = o
+          return Rx.Subscription.create(function ()
+            teardownSpy()
+          end)
+        end)
+
+        observable:subscribe()
+        observer:onError()
+        expect(#teardownSpy).to.equal(1)
+      end)
+    end)
+  end)
+
+  describe('automatically unsubscribes on completion', function ()
+    describe('when completion is emitted during execution of `subscribe` logic', function ()
+      it('and subscribe function returns plain teardown function', function ()
+        local teardownSpy = spy()
+        local observable = Rx.Observable.create(function (observer)
+          observer:onCompleted()
+          return teardownSpy
+        end)
+        observable:subscribe()
+        expect(#teardownSpy).to.equal(1)
+      end)
+
+      it('and subscribe function returns Subscription', function ()
+        local teardownSpy = spy()
+        local observable = Rx.Observable.create(function (observer)
+          observer:onCompleted()
+          return Rx.Subscription.create(function ()
+            teardownSpy()
+          end)
+        end)
+        observable:subscribe()
+        expect(#teardownSpy).to.equal(1)
+      end)
+    end)
+
+    describe('when completion is emitted later after subscription logic has been fully executed', function ()
+      it('and subscribe function returns plain teardown function', function ()
+        local teardownSpy = spy()
+        local observer
+
+        local observable = Rx.Observable.create(function (o)
+          observer = o
+          return teardownSpy
+        end)
+
+        observable:subscribe()
+        observer:onCompleted()
+        expect(#teardownSpy).to.equal(1)
+      end)
+
+      it('and subscribe function returns a Subscription', function ()
+        local teardownSpy = spy()
+        local observer
+
+        local observable = Rx.Observable.create(function (o)
+          observer = o
+          return Rx.Subscription.create(function ()
+            teardownSpy()
+          end)
+        end)
+
+        observable:subscribe()
+        observer:onCompleted()
+        expect(#teardownSpy).to.equal(1)
+      end)
+    end)
   end)
 
   dofile('tests/all.lua')
