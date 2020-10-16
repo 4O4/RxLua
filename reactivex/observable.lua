@@ -6,28 +6,54 @@ local Observer = require 'reactivex.observer'
 local Observable = {}
 Observable.__index = Observable
 Observable.__tostring = util.constant('Observable')
+Observable.___isa = { Observable }
 
---- Creates a new Observable.
--- @arg {function} subscribe - The subscription function that produces values.
+--- Creates a new Observable. Please not that the Observable does not do any work right after creation, but only after calling a `subscribe` on it.
+-- @arg {function} subscribe - The subscription function that produces values. It is called when the Observable 
+--                             is initially subscribed to. This function is given an Observer, to which new values
+--                             can be `onNext`ed, or an `onError` method can be called to raise an error, or `onCompleted`
+--                             can be called to notify of a successful completion.
 -- @returns {Observable}
 function Observable.create(subscribe)
-  local self = {
-    _subscribe = subscribe
-  }
+  local self = {}
+  local subscribe = subscribe
+
+  if subscribe then
+    self._subscribe = function (self, ...) return subscribe(...) end
+  end
 
   return setmetatable(self, Observable)
 end
 
---- Shorthand for creating an Observer and passing it to this Observable's subscription function.
--- @arg {function} onNext - Called when the Observable produces a value.
+-- Creates a new Observable, with this Observable as the source. It must be used internally by operators to create a proper chain of observables.
+-- @arg {function} createObserver observer factory function
+-- @returns {Observable} a new observable chained with the source observable
+function Observable:lift(createObserver)
+  local this = self
+  local createObserver = createObserver
+
+  return Observable.create(function (observer)
+    return this:subscribe(createObserver(observer))
+  end)
+end
+
+--- Invokes an execution of an Observable and registers Observer handlers for notifications it will emit.
+-- @arg {function|Observer} onNext|observer - Called when the Observable produces a value.
 -- @arg {function} onError - Called when the Observable terminates due to an error.
 -- @arg {function} onCompleted - Called when the Observable completes normally.
-function Observable:subscribe(onNext, onError, onCompleted)
-  if type(onNext) == 'table' then
-    return self._subscribe(onNext)
+-- @returns {Subscription} a Subscription object which you can call `unsubscribe` on to stop all work that the Observable does.
+function Observable:subscribe(observerOrNext, onError, onCompleted)
+  local sink
+
+  if util.isa(observerOrNext, Observer) then
+    sink = observerOrNext
   else
-    return self._subscribe(Observer.create(onNext, onError, onCompleted))
+    sink = Observer.create(observerOrNext, onError, onCompleted)
   end
+
+  sink:add(self:_subscribe(sink))
+
+  return sink
 end
 
 --- Returns an Observable that immediately completes without producing a value.
