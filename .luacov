@@ -1,5 +1,5 @@
 include = {
-   ".*/.hererocks/share/lua/[^/]+/reactivexrx"
+   ".*/.hererocks/share/lua/[^/]+/reactivex"
 }
 coveralls = {
    pathcorrect = {
