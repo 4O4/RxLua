@@ -1,7 +1,7 @@
 describe('tap', function()
   it('does not create a subscription', function()
     local observable = Rx.Observable.create(error)
-    expect(observable.tap).to_not.fail()
+    expect(function () observable:tap() end).to_not.fail()
   end)
 
   it('runs the specified onNext function', function()
