@@ -32,4 +32,69 @@ describe('take', function()
     expect(#onError).to.equal(0)
     expect(#onCompleted).to.equal(1)
   end)
+
+  describe('guarantees that source does not emit anything more after all values have been taken', function ()
+    local function applyDummyOperator(source, fn, asd)
+      return Rx.Observable.create(function(observer)
+        local function onNext(...)
+          fn()
+          return observer:onNext(...)
+        end
+    
+        local function onError(e)
+          return observer:onError(e)
+        end
+    
+        local function onCompleted()
+          return observer:onCompleted()
+        end
+
+        return  source:subscribe(onNext, onError, onCompleted)
+      end)
+    end
+
+    it('when take() is the last operator in the chain', function ()
+      local observer
+      local preTakeOperator1Spy, preTakeOperator2Spy = spy(), spy()
+      local source = Rx.Observable.create(function (o) observer = o end)
+
+      local observable = applyDummyOperator(source, preTakeOperator1Spy, "aaa")
+      observable = applyDummyOperator(observable, preTakeOperator2Spy, "bbb")
+      observable = observable:take(2)
+  
+      observable:subscribe(function () end)
+  
+      observer:onNext(1)
+      observer:onNext(2)
+      observer:onNext(3)
+      observer:onNext(4)
+      observer:onNext(5)
+
+      expect(#preTakeOperator1Spy).to.equal(2)
+      expect(#preTakeOperator2Spy).to.equal(2)
+    end)
+
+    it('when take() is not the last operator in the chain', function ()
+      local observer
+      local preTakeOperator1Spy, preTakeOperator2Spy, postTakeOperator1Spy = spy(), spy(), spy()
+      local source = Rx.Observable.create(function (o) observer = o end)
+
+      local observable = applyDummyOperator(source, preTakeOperator1Spy)
+      observable = applyDummyOperator(observable, preTakeOperator2Spy)
+      observable = observable:take(2)
+      observable = applyDummyOperator(observable, postTakeOperator1Spy)
+  
+      observable:subscribe(function () end)
+  
+      observer:onNext(1)
+      observer:onNext(2)
+      observer:onNext(3)
+      observer:onNext(4)
+      observer:onNext(5)
+
+      expect(#preTakeOperator1Spy).to.equal(2)
+      expect(#preTakeOperator2Spy).to.equal(2)
+      expect(#postTakeOperator1Spy).to.equal(2)
+    end)
+  end)
 end)
