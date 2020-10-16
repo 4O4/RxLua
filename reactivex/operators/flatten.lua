@@ -1,41 +1,33 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that subscribes to the Observables produced by the original and
 -- produces their values.
 -- @returns {Observable}
 function Observable:flatten()
-  return Observable.create(function(observer)
-    local subscriptions = {}
-    local remaining = 1
+  return self:lift(function (destination)
+    local sink
 
     local function onError(message)
-      return observer:onError(message)
-    end
-
-    local function onCompleted()
-      remaining = remaining - 1
-      if remaining == 0 then
-        return observer:onCompleted()
-      end
+      return destination:onError(message)
     end
 
     local function onNext(observable)
       local function innerOnNext(...)
-        observer:onNext(...)
+        destination:onNext(...)
       end
 
-      remaining = remaining + 1
-      local subscription = observable:subscribe(innerOnNext, onError, onCompleted)
-      subscriptions[#subscriptions + 1] = subscription
+      sink:add(observable:subscribe(innerOnNext, onError, util.noop))
     end
 
-    subscriptions[#subscriptions + 1] = self:subscribe(onNext, onError, onCompleted)
-    return Subscription.create(function ()
-      for i = 1, #subscriptions do
-        subscriptions[i]:unsubscribe()
-      end
-    end)
+    local function onCompleted()
+      return destination:onCompleted()
+    end
+
+    sink = Observer.create(onNext, onError, onCompleted)
+
+    return sink
   end)
 end

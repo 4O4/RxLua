@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that intercepts any errors from the previous and replace them with values
 -- produced by a new Observable.
@@ -9,32 +10,29 @@ local util = require 'reactivex.util'
 function Observable:catch(handler)
   handler = handler and (type(handler) == 'function' and handler or util.constant(handler))
 
-  return Observable.create(function(observer)
-    local subscription
-
+  return self:lift(function (destination)
     local function onNext(...)
-      return observer:onNext(...)
+      return destination:onNext(...)
     end
 
     local function onError(e)
       if not handler then
-        return observer:onCompleted()
+        return destination:onCompleted()
       end
 
       local success, _continue = pcall(handler, e)
+
       if success and _continue then
-        if subscription then subscription:unsubscribe() end
-        _continue:subscribe(observer)
+        _continue:subscribe(destination)
       else
-        observer:onError(success and e or _continue)
+        destination:onError(_continue)
       end
     end
 
     local function onCompleted()
-      observer:onCompleted()
+      destination:onCompleted()
     end
 
-    subscription = self:subscribe(onNext, onError, onCompleted)
-    return subscription
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

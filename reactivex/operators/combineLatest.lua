@@ -1,6 +1,7 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that runs a combinator function on the most recent values from a set
 -- of Observables whenever any of them produce a new value. The results of the combinator function
@@ -12,53 +13,50 @@ local util = require 'reactivex.util'
 function Observable:combineLatest(...)
   local sources = {...}
   local combinator = table.remove(sources)
-  if type(combinator) ~= 'function' then
+  if not util.isCallable(combinator) then
     table.insert(sources, combinator)
     combinator = function(...) return ... end
   end
   table.insert(sources, 1, self)
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local latest = {}
     local pending = {util.unpack(sources)}
-    local completed = {}
-    local subscription = {}
+    local completedCount = 0
 
-    local function onNext(i)
+    local function createOnNext(i)
       return function(value)
         latest[i] = value
         pending[i] = nil
 
         if not next(pending) then
-          util.tryWithObserver(observer, function()
-            observer:onNext(combinator(util.unpack(latest)))
+          util.tryWithObserver(destination, function()
+            destination:onNext(combinator(util.unpack(latest)))
           end)
         end
       end
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
-    local function onCompleted(i)
+    local function createOnCompleted(i)
       return function()
-        table.insert(completed, i)
+        completedCount = completedCount + 1
 
-        if #completed == #sources then
-          observer:onCompleted()
+        if completedCount == #sources then
+          destination:onCompleted()
         end
       end
     end
 
-    for i = 1, #sources do
-      subscription[i] = sources[i]:subscribe(onNext(i), onError, onCompleted(i))
+    local sink = Observer.create(createOnNext(1), onError, createOnCompleted(1))
+
+    for i = 2, #sources do
+      sink:add(sources[i]:subscribe(createOnNext(i), onError, createOnCompleted(i)))
     end
 
-    return Subscription.create(function ()
-      for i = 1, #sources do
-        if subscription[i] then subscription[i]:unsubscribe() end
-      end
-    end)
+    return sink
   end)
 end

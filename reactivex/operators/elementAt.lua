@@ -1,4 +1,5 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that produces the nth element produced by the source Observable.
 -- @arg {number} index - The index of the item, with an index of 1 representing the first.
@@ -8,31 +9,26 @@ function Observable:elementAt(index)
     error('Expected a number')
   end
 
-  return Observable.create(function(observer)
-    local subscription
+  return self:lift(function (destination)
     local i = 1
 
     local function onNext(...)
       if i == index then
-        observer:onNext(...)
-        observer:onCompleted()
-        if subscription then
-          subscription:unsubscribe()
-        end
+        destination:onNext(...)
+        destination:onCompleted()
       else
         i = i + 1
       end
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    subscription = self:subscribe(onNext, onError, onCompleted)
-    return subscription
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

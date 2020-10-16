@@ -1,42 +1,39 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
+local Observer = require 'reactivex.observer'
 
 --- Given an Observable that produces Observables, returns an Observable that produces the values
 -- produced by the most recently produced Observable.
 -- @returns {Observable}
 function Observable:switch()
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local innerSubscription
+    local sink
 
     local function onNext(...)
-      return observer:onNext(...)
+      return destination:onNext(...)
     end
 
     local function onError(message)
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
     local function switch(source)
       if innerSubscription then
         innerSubscription:unsubscribe()
+        sink:remove(innerSubscription)
       end
 
       innerSubscription = source:subscribe(onNext, onError, nil)
+      sink:add(innerSubscription)
     end
 
-    local subscription = self:subscribe(switch, onError, onCompleted)
-    return Subscription.create(function()
-      if innerSubscription then
-        innerSubscription:unsubscribe()
-      end
+    sink = Observer.create(switch, onError, onCompleted)
 
-      if subscription then
-        subscription:unsubscribe()
-      end
-    end)
+    return sink
   end)
 end

@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces the values produced by all the specified Observables in
 -- the order they are produced.
@@ -9,36 +10,34 @@ function Observable:merge(...)
   local sources = {...}
   table.insert(sources, 1, self)
 
-  return Observable.create(function(observer)
-    local completed = {}
+  return self:lift(function (destination)
+    local completedCount = 0
     local subscriptions = {}
 
     local function onNext(...)
-      return observer:onNext(...)
+      return destination:onNext(...)
     end
 
     local function onError(message)
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted(i)
       return function()
-        table.insert(completed, i)
+        completedCount = completedCount + 1
 
-        if #completed == #sources then
-          observer:onCompleted()
+        if completedCount == #sources then
+          destination:onCompleted()
         end
       end
     end
 
-    for i = 1, #sources do
-      subscriptions[i] = sources[i]:subscribe(onNext, onError, onCompleted(i))
+    local sink = Observer.create(onNext, onError, onCompleted(1))
+
+    for i = 2, #sources do
+      sink:add(sources[i]:subscribe(onNext, onError, onCompleted(i)))
     end
 
-    return Subscription.create(function ()
-      for i = 1, #sources do
-        if subscriptions[i] then subscriptions[i]:unsubscribe() end
-      end
-    end)
+    return sink
   end)
 end

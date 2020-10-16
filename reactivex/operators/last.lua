@@ -1,10 +1,11 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that only produces the last result of the original.
 -- @returns {Observable}
 function Observable:last()
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local value
     local empty = true
 
@@ -14,17 +15,17 @@ function Observable:last()
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
       if not empty then
-        observer:onNext(util.unpack(value or {}))
+        destination:onNext(util.unpack(value or {}))
       end
 
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

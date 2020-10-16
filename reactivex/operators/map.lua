@@ -1,27 +1,28 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces the values of the original transformed by a function.
 -- @arg {function} callback - The function to transform values from the original Observable.
 -- @returns {Observable}
 function Observable:map(callback)
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     callback = callback or util.identity
 
     local function onNext(...)
-      return util.tryWithObserver(observer, function(...)
-        return observer:onNext(callback(...))
+      return util.tryWithObserver(destination, function(...)
+        return destination:onNext(callback(...))
       end, ...)
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

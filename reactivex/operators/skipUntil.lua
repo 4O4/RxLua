@@ -1,11 +1,12 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that skips over values produced by the original until the specified
 -- Observable produces a value.
 -- @arg {Observable} other - The Observable that triggers the production of values.
 -- @returns {Observable}
 function Observable:skipUntil(other)
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local triggered = false
     local function trigger()
       triggered = true
@@ -15,22 +16,22 @@ function Observable:skipUntil(other)
 
     local function onNext(...)
       if triggered then
-        observer:onNext(...)
+        destination:onNext(...)
       end
     end
 
     local function onError()
       if triggered then
-        observer:onError()
+        destination:onError()
       end
     end
 
     local function onCompleted()
       if triggered then
-        observer:onCompleted()
+        destination:onCompleted()
       end
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

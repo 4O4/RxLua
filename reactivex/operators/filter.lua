@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that only produces values of the first that satisfy a predicate.
 -- @arg {function} predicate - The predicate used to filter values.
@@ -7,23 +8,24 @@ local util = require 'reactivex.util'
 function Observable:filter(predicate)
   predicate = predicate or util.identity
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local function onNext(...)
-      util.tryWithObserver(observer, function(...)
+      util.tryWithObserver(destination, function(...)
         if predicate(...) then
-          return observer:onNext(...)
+          destination:onNext(...)
+          return
         end
       end, ...)
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

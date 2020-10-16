@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that produces a single value representing the number of values produced
 -- by the source value that satisfy an optional predicate.
@@ -7,11 +8,11 @@ local util = require 'reactivex.util'
 function Observable:count(predicate)
   predicate = predicate or util.constant(true)
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local count = 0
 
     local function onNext(...)
-      util.tryWithObserver(observer, function(...)
+      util.tryWithObserver(destination, function(...)
         if predicate(...) then
           count = count + 1
         end
@@ -19,14 +20,14 @@ function Observable:count(predicate)
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      observer:onNext(count)
-      observer:onCompleted()
+      destination:onNext(count)
+      destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

@@ -1,37 +1,39 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that only produces the first n results of the original.
 -- @arg {number=1} n - The number of elements to produce before completing.
 -- @returns {Observable}
 function Observable:take(n)
-  n = n or 1
+  local n = n or 1
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     if n <= 0 then
-      observer:onCompleted()
+      destination:onCompleted()
       return
     end
 
     local i = 1
 
     local function onNext(...)
-      observer:onNext(...)
+      destination:onNext(...)
 
       i = i + 1
 
       if i > n then
-        observer:onCompleted()
+        destination:onCompleted()
+        destination:unsubscribe()
       end
     end
 
     local function onError(e)
-      return observer:onError(e)
+      destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

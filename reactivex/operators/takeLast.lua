@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that produces a specified number of elements from the end of a source
 -- Observable.
@@ -10,7 +11,7 @@ function Observable:takeLast(count)
     error('Expected a number')
   end
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local buffer = {}
 
     local function onNext(...)
@@ -21,16 +22,16 @@ function Observable:takeLast(count)
     end
 
     local function onError(message)
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted()
       for i = 1, #buffer do
-        observer:onNext(util.unpack(buffer[i]))
+        destination:onNext(util.unpack(buffer[i]))
       end
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

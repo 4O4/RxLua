@@ -1,4 +1,5 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces values computed by extracting the given keys from the
 -- tables produced by the original.
@@ -12,19 +13,19 @@ function Observable:pluck(key, ...)
     return Observable.throw('pluck key must be a string')
   end
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local function onNext(t)
-      return observer:onNext(t[key])
+      return destination:onNext(t[key])
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end):pluck(...)
 end

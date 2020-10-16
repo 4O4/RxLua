@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces values from the original which do not satisfy a
 -- predicate.
@@ -8,23 +9,23 @@ local util = require 'reactivex.util'
 function Observable:reject(predicate)
   predicate = predicate or util.identity
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local function onNext(...)
-      util.tryWithObserver(observer, function(...)
+      util.tryWithObserver(destination, function(...)
         if not predicate(...) then
-          return observer:onNext(...)
+          return destination:onNext(...)
         end
       end, ...)
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

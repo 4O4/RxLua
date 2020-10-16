@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that buffers values from the original and produces them as multiple
 -- values.
@@ -9,12 +10,12 @@ function Observable:buffer(size)
     error('Expected a number')
   end
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local buffer = {}
 
     local function emit()
       if #buffer > 0 then
-        observer:onNext(util.unpack(buffer))
+        destination:onNext(util.unpack(buffer))
         buffer = {}
       end
     end
@@ -31,14 +32,14 @@ function Observable:buffer(size)
 
     local function onError(message)
       emit()
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted()
       emit()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

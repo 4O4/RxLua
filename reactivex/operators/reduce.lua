@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces a single value computed by accumulating the results of
 -- running a function on each value produced by the original Observable.
@@ -9,7 +10,7 @@ local util = require 'reactivex.util'
 -- @arg {*} seed - A value to pass to the accumulator the first time it is run.
 -- @returns {Observable}
 function Observable:reduce(accumulator, seed)
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local result = seed
     local first = true
 
@@ -18,21 +19,21 @@ function Observable:reduce(accumulator, seed)
         result = ...
         first = false
       else
-        return util.tryWithObserver(observer, function(...)
+        return util.tryWithObserver(destination, function(...)
           result = accumulator(result, ...)
         end, ...)
       end
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      observer:onNext(result)
-      return observer:onCompleted()
+      destination:onNext(result)
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

@@ -1,6 +1,7 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that produces values from the original along with the most recently
 -- produced value from all other specified Observables. Note that only the first argument from each
@@ -10,9 +11,8 @@ local util = require 'reactivex.util'
 function Observable:with(...)
   local sources = {...}
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local latest = setmetatable({}, {__len = util.constant(#sources)})
-    local subscriptions = {}
 
     local function setLatest(i)
       return function(value)
@@ -21,26 +21,23 @@ function Observable:with(...)
     end
 
     local function onNext(value)
-      return observer:onNext(value, util.unpack(latest))
+      return destination:onNext(value, util.unpack(latest))
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
+
+    local sink = Observer.create(onNext, onError, onCompleted)
 
     for i = 1, #sources do
-      subscriptions[i] = sources[i]:subscribe(setLatest(i), util.noop, util.noop)
+      sink:add(sources[i]:subscribe(setLatest(i), util.noop, util.noop))
     end
 
-    subscriptions[#sources + 1] = self:subscribe(onNext, onError, onCompleted)
-    return Subscription.create(function ()
-      for i = 1, #sources + 1 do
-        if subscriptions[i] then subscriptions[i]:unsubscribe() end
-      end
-    end)
+    return sink
   end)
 end

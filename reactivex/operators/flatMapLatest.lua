@@ -1,6 +1,7 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that uses a callback to create Observables from the values produced by
 -- the source, then produces values from the most recent of these Observables.
@@ -8,40 +9,35 @@ local util = require 'reactivex.util'
 -- @returns {Observable}
 function Observable:flatMapLatest(callback)
   callback = callback or util.identity
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local innerSubscription
+    local sink
 
     local function onNext(...)
-      observer:onNext(...)
+      destination:onNext(...)
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
     local function subscribeInner(...)
       if innerSubscription then
         innerSubscription:unsubscribe()
+        sink:remove(innerSubscription)
       end
 
-      return util.tryWithObserver(observer, function(...)
+      return util.tryWithObserver(destination, function(...)
         innerSubscription = callback(...):subscribe(onNext, onError)
+        sink:add(innerSubscription)
       end, ...)
     end
 
-    local subscription = self:subscribe(subscribeInner, onError, onCompleted)
-    return Subscription.create(function()
-      if innerSubscription then
-        innerSubscription:unsubscribe()
-      end
-
-      if subscription then
-        subscription:unsubscribe()
-      end
-    end)
+    sink = Observer.create(subscribeInner, onError, onCompleted)
+    return sink
   end)
 end

@@ -1,4 +1,5 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that skips over a specified number of values produced by the original
 -- and produces the rest.
@@ -7,25 +8,25 @@ local Observable = require 'reactivex.observable'
 function Observable:skip(n)
   n = n or 1
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local i = 1
 
     local function onNext(...)
       if i > n then
-        observer:onNext(...)
+        destination:onNext(...)
       else
         i = i + 1
       end
     end
 
     local function onError(e)
-      return observer:onError(e)
+      return destination:onError(e)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

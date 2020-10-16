@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that produces a default set of items if the source Observable produces
 -- no values.
@@ -9,26 +10,26 @@ local util = require 'reactivex.util'
 function Observable:defaultIfEmpty(...)
   local defaults = util.pack(...)
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local hasValue = false
 
     local function onNext(...)
       hasValue = true
-      observer:onNext(...)
+      destination:onNext(...)
     end
 
     local function onError(e)
-      observer:onError(e)
+      destination:onError(e)
     end
 
     local function onCompleted()
       if not hasValue then
-        observer:onNext(util.unpack(defaults))
+        destination:onNext(util.unpack(defaults))
       end
 
-      observer:onCompleted()
+      destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

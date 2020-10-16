@@ -8,8 +8,8 @@ local util = require 'reactivex.util'
 -- @returns {Observable}
 function Observable:startWith(...)
   local values = util.pack(...)
-  return Observable.create(function(observer)
-    observer:onNext(util.unpack(values))
-    return self:subscribe(observer)
+  return self:lift(function (destination)
+    destination:onNext(util.unpack(values))
+    return destination
   end)
 end

@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that omits a specified number of values from the end of the original
 -- Observable.
@@ -11,11 +12,11 @@ function Observable:skipLast(count)
   end
 
   local buffer = {}
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local function emit()
       if #buffer > count and buffer[1] then
         local values = table.remove(buffer, 1)
-        observer:onNext(util.unpack(values))
+        destination:onNext(util.unpack(values))
       end
     end
 
@@ -25,14 +26,14 @@ function Observable:skipLast(count)
     end
 
     local function onError(message)
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted()
       emit()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

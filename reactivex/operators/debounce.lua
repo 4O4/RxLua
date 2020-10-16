@@ -1,6 +1,7 @@
 local Observable = require 'reactivex.observable'
 local Subscription = require 'reactivex.subscription'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new throttled Observable that waits to produce values until a timeout has expired, at
 -- which point it produces the latest value from the source Observable.  Whenever the source
@@ -11,8 +12,9 @@ local util = require 'reactivex.util'
 function Observable:debounce(time, scheduler)
   time = time or 0
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local debounced = {}
+    local sink
 
     local function wrap(key)
       return function(...)
@@ -20,23 +22,20 @@ function Observable:debounce(time, scheduler)
 
         if debounced[key] then
           debounced[key]:unsubscribe()
+          sink:remove(debounced[key])
         end
 
         local values = util.pack(...)
 
         debounced[key] = scheduler:schedule(function()
-          return observer[key](observer, util.unpack(values))
+          return destination[key](destination, util.unpack(values))
         end, time)
+        sink:add(debounced[key])
       end
     end
 
-    local subscription = self:subscribe(wrap('onNext'), wrap('onError'), wrap('onCompleted'))
+    sink = Observer.create(wrap('onNext'), wrap('onError'), wrap('onCompleted'))
 
-    return Subscription.create(function()
-      if subscription then subscription:unsubscribe() end
-      for _, timeout in pairs(debounced) do
-        timeout:unsubscribe()
-      end
-    end)
+    return sink
   end)
 end

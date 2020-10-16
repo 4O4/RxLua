@@ -1,5 +1,6 @@
 local Observable = require 'reactivex.observable'
 local util = require 'reactivex.util'
+local Observer = require 'reactivex.observer'
 
 --- Returns a new Observable that skips elements until the predicate returns falsy for one of them.
 -- @arg {function} predicate - The predicate used to continue skipping values.
@@ -7,29 +8,29 @@ local util = require 'reactivex.util'
 function Observable:skipWhile(predicate)
   predicate = predicate or util.identity
 
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local skipping = true
 
     local function onNext(...)
       if skipping then
-        util.tryWithObserver(observer, function(...)
+        util.tryWithObserver(destination, function(...)
           skipping = predicate(...)
         end, ...)
       end
 
       if not skipping then
-        return observer:onNext(...)
+        return destination:onNext(...)
       end
     end
 
     local function onError(message)
-      return observer:onError(message)
+      return destination:onError(message)
     end
 
     local function onCompleted()
-      return observer:onCompleted()
+      return destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end

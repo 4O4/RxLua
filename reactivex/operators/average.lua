@@ -1,9 +1,10 @@
 local Observable = require 'reactivex.observable'
+local Observer = require 'reactivex.observer'
 
 --- Returns an Observable that produces the average of all values produced by the original.
 -- @returns {Observable}
 function Observable:average()
-  return Observable.create(function(observer)
+  return self:lift(function (destination)
     local sum, count = 0, 0
 
     local function onNext(value)
@@ -12,17 +13,17 @@ function Observable:average()
     end
 
     local function onError(e)
-      observer:onError(e)
+      destination:onError(e)
     end
 
     local function onCompleted()
       if count > 0 then
-        observer:onNext(sum / count)
+        destination:onNext(sum / count)
       end
 
-      observer:onCompleted()
+      destination:onCompleted()
     end
 
-    return self:subscribe(onNext, onError, onCompleted)
+    return Observer.create(onNext, onError, onCompleted)
   end)
 end
