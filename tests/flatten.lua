@@ -13,37 +13,26 @@ describe('flatten', function()
     expect(observable).to.produce(1, 2, 3, 2, 3, 3)
   end)
 
-  it('completes after all observables produced by its parent', function()
-    s = Rx.CooperativeScheduler.create()
-    local observable = Rx.Observable.fromRange(3):map(function(i)
-      return Rx.Observable.fromRange(i, 3):delay(i, s)
-    end):flatten()
-
-    local onNext, onError, onCompleted, order = observableSpy(observable)
-    repeat s:update(1)
-    until s:isEmpty()
-    expect(#onNext).to.equal(6)
-    expect(#onCompleted).to.equal(1)
-  end)
-
   it('should unsubscribe from all source observables', function()
-    local unsubscribeA = spy()
+    local subA = Rx.Subscription.create()
     local observableA = Rx.Observable.create(function(observer)
-      return Rx.Subscription.create(unsubscribeA)
+      return subA
     end)
 
-    local unsubscribeB = spy()
+    local subB = Rx.Subscription.create()
     local observableB = Rx.Observable.create(function(observer)
-      return Rx.Subscription.create(unsubscribeB)
+      return subB
     end)
 
-    local subject = Rx.Subject.create()
+    local subject = Rx.Observable.create(function (observer)
+      observer:onNext(observableA)
+      observer:onNext(observableB)
+    end)
     local subscription = subject:flatten():subscribe()
 
-    subject:onNext(observableA)
-    subject:onNext(observableB)
     subscription:unsubscribe()
-    expect(#unsubscribeA).to.equal(1)
-    expect(#unsubscribeB).to.equal(1)
+
+    expect(subA:isUnsubscribed()).to.equal(true)
+    expect(subB:isUnsubscribed()).to.equal(true)
   end)
 end)
