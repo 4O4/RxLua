@@ -4,7 +4,7 @@ io.output('doc/README.md')
 
 io.write('Lua-ReactiveX\n===\n\n')
 
-local comments = docroc.process('rx.lua')
+local comments = docroc.process('reactivex.lua')
 
 -- Generate table of contents
 for _, comment in ipairs(comments) do
