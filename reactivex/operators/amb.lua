@@ -7,7 +7,7 @@ local Subscription = require 'reactivex.subscription'
 function Observable.amb(a, b, ...)
   if not a or not b then return a end
 
-  return Observable.create(function(observer)
+  return Observable.create(function (observer)
     local subscriptionA, subscriptionB
 
     local function onNextA(...)

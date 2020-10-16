@@ -155,11 +155,11 @@ describe('Observable', function()
         return 3
       end)
 
-      Rx.scheduler = Rx.CooperativeScheduler.create()
-      local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
+      local scheduler = Rx.CooperativeScheduler.create()
+      local observable = Rx.Observable.fromCoroutine(coroutine, scheduler)
       local onNext, onError, onCompleted = observableSpy(observable)
-      repeat Rx.scheduler:update()
-      until Rx.scheduler:isEmpty()
+      repeat scheduler:update()
+      until scheduler:isEmpty()
       expect(onNext).to.equal({{1}, {2}, {3}})
     end)
 
@@ -170,11 +170,11 @@ describe('Observable', function()
         return 3
       end
 
-      Rx.scheduler = Rx.CooperativeScheduler.create()
-      local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
+      local scheduler = Rx.CooperativeScheduler.create()
+      local observable = Rx.Observable.fromCoroutine(coroutine, scheduler)
       local onNext, onError, onCompleted = observableSpy(observable)
-      repeat Rx.scheduler:update()
-      until Rx.scheduler:isEmpty()
+      repeat scheduler:update()
+      until scheduler:isEmpty()
       expect(onNext).to.equal({{1}, {2}, {3}})
     end)
 
@@ -185,13 +185,13 @@ describe('Observable', function()
         return 3
       end)
 
-      Rx.scheduler = Rx.CooperativeScheduler.create()
-      local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
+      local scheduler = Rx.CooperativeScheduler.create()
+      local observable = Rx.Observable.fromCoroutine(coroutine, scheduler)
       local onNextA = observableSpy(observable)
       local onNextB = observableSpy(observable)
 
-      repeat Rx.scheduler:update()
-      until Rx.scheduler:isEmpty()
+      repeat scheduler:update()
+      until scheduler:isEmpty()
 
       expect(onNextA).to.equal({{1}, {3}})
       expect(onNextB).to.equal({{2}})
@@ -204,13 +204,13 @@ describe('Observable', function()
         return 3
       end
 
-      Rx.scheduler = Rx.CooperativeScheduler.create()
-      local observable = Rx.Observable.fromCoroutine(coroutine, Rx.scheduler)
+      local scheduler = Rx.CooperativeScheduler.create()
+      local observable = Rx.Observable.fromCoroutine(coroutine, scheduler)
       local onNextA, onErrorA, onCompletedA = observableSpy(observable)
       local onNextB, onErrorB, onCompletedB = observableSpy(observable)
       local onNextC, onErrorC, onCompletedC = observableSpy(observable)
-      repeat Rx.scheduler:update()
-      until Rx.scheduler:isEmpty()
+      repeat scheduler:update()
+      until scheduler:isEmpty()
 
       expect(onNextA).to.equal({{1}, {2}, {3}})
       expect(onNextB).to.equal({{1}, {2}, {3}})

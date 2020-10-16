@@ -48,4 +48,6 @@ describe('retry', function()
     expect(#onError).to.equal(1)
     expect(#onCompleted).to.equal(0)
   end)
+
+  -- FIXME: missing unsubscribe test?
 end)
