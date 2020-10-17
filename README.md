@@ -1,4 +1,4 @@
-# Lua-ReactiveX [![Build Status](https://travis-ci.org/4O4/lua-reactivex.svg)](https://travis-ci.org/4O4/lua-reactivex) [![Coverage Status](https://coveralls.io/repos/github/4O4/lua-reactivex/badge.svg?branch=master)](https://coveralls.io/github/4O4/lua-reactivex?branch=master)
+# Lua-ReactiveX [![Build Status](https://travis-ci.org/4O4/lua-reactivex.svg?branch=master)](https://travis-ci.org/4O4/lua-reactivex) [![Coverage Status](https://coveralls.io/repos/github/4O4/lua-reactivex/badge.svg?branch=master)](https://coveralls.io/github/4O4/lua-reactivex?branch=master)
 
 [Reactive Extensions](http://reactivex.io) for Lua.
 
