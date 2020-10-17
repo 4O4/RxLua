@@ -46,7 +46,7 @@ before_script:
 
 script:
   - lua -v
-  - lua -lluacov tests/runner.lua
+  - lua tests/runner.lua --with-coverage
 
 after_success:
   - luacov-coveralls
