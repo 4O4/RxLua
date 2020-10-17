@@ -2,10 +2,6 @@ local Observer = require("reactivex.observer")
 local BehaviorSubject = require("reactivex.subjects.behaviorsubject")
 local Subscription = require("reactivex.subscription")
 
-local Observable = require("reactivex.observable")
-local Observer = require("reactivex.observer")
-local Subscription = require("reactivex.subscription")
-
 describe('BehaviorSubject', function()
   describe('create', function()
     it('returns a BehaviorSubject', function()

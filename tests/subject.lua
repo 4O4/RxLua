@@ -1,9 +1,6 @@
 local Observer = require("reactivex.observer")
-local Subject = require("reactivex.subjects.subject")
-local Subscription = require("reactivex.subscription")
-
 local Observable = require("reactivex.observable")
-local Observer = require("reactivex.observer")
+local Subject = require("reactivex.subjects.subject")
 local Subscription = require("reactivex.subscription")
 
 describe('Subject', function()
