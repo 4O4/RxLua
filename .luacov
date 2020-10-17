@@ -8,4 +8,4 @@ coveralls = {
    },
 }
 
-reporter = "lcosv"
+reporter = "lcov"
