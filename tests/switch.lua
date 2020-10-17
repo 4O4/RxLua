@@ -1,11 +1,18 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.switch')
+
 describe('switch', function()
   it('errors when the source errors', function()
-    expect(Rx.Observable.throw():switch()).to.produce.error()
+    expect(Observable.throw():switch()).to.produce.error()
   end)
 
   it('errors when an Observable produced by the source errors', function()
-    local observable = Rx.Observable.create(function(observer)
-      observer:onNext(Rx.Observable.throw())
+    local observable = Observable.create(function(observer)
+      observer:onNext(Observable.throw())
       observer:onCompleted()
     end)
 
@@ -13,9 +20,9 @@ describe('switch', function()
   end)
 
   it('produces the values produced by the latest Observable produced by the source', function()
-    local a = Rx.Subject.create()
-    local b = Rx.Subject.create()
-    local c = Rx.Subject.create()
+    local a = Subject.create()
+    local b = Subject.create()
+    local c = Subject.create()
 
     local onNext, onError, onCompleted = observableSpy(a:switch())
 
@@ -38,12 +45,12 @@ describe('switch', function()
   end)
 
   it('should unsubscribe from inner subscription too', function()
-    local subA = Rx.Subscription.create()
-    local observableA = Rx.Observable.create(function(observer)
+    local subA = Subscription.create()
+    local observableA = Observable.create(function(observer)
       return subA
     end)
 
-    local subject = Rx.Observable.create(function (observer)
+    local subject = Observable.create(function (observer)
       observer:onNext(observableA)
     end)
     local subscription = subject:switch():subscribe()

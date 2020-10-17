@@ -1,17 +1,24 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.merge')
+
 describe('merge', function()
   it('produces values from the first observable if it is the only argument', function()
-    local observable = Rx.Observable.fromRange(5):merge()
+    local observable = Observable.fromRange(5):merge()
     expect(observable).to.produce(1, 2, 3, 4, 5)
   end)
 
   it('unsubscribes from all input observables', function()
-    local observableA = Rx.Observable.create(function(observer)
+    local observableA = Observable.create(function(observer)
       return
     end)
 
     local unsubscribeB = spy()
-    local subscriptionB = Rx.Subscription.create(unsubscribeB)
-    local observableB = Rx.Observable.create(function(observer)
+    local subscriptionB = Subscription.create(unsubscribeB)
+    local observableB = Observable.create(function(observer)
       return subscriptionB
     end)
 
@@ -21,22 +28,22 @@ describe('merge', function()
   end)
 
   it('unsubscribes from all input observables included completed', function()
-    local observableA = Rx.Observable.empty()
+    local observableA = Observable.empty()
 
     local unsubscribeB = spy()
-    local subscriptionB = Rx.Subscription.create(unsubscribeB)
-    local observableB = Rx.Observable.create(function(observer)
+    local subscriptionB = Subscription.create(unsubscribeB)
+    local observableB = Observable.create(function(observer)
       return subscriptionB
     end)
 
-    local subscription = observableA:merge(Rx.Observable.empty(), observableB):subscribe()
+    local subscription = observableA:merge(Observable.empty(), observableB):subscribe()
     subscription:unsubscribe()
     expect(#unsubscribeB).to.equal(1)
   end)
 
   it('produces values from all input observables, in order', function()
-    local observableA = Rx.Subject.create()
-    local observableB = Rx.Subject.create()
+    local observableA = Subject.create()
+    local observableB = Subject.create()
     local merged = observableA:merge(observableB)
     local onNext, onError, onCompleted = observableSpy(merged)
     observableA:onNext('a')
@@ -49,10 +56,10 @@ describe('merge', function()
   end)
 
   it('completes when all source observables complete', function()
-    local observableA = Rx.Subject.create()
-    local observableB = Rx.Subject.create()
+    local observableA = Subject.create()
+    local observableB = Subject.create()
     local complete = spy()
-    Rx.Observable.merge(observableA, observableB):subscribe(nil, nil, complete)
+    Observable.merge(observableA, observableB):subscribe(nil, nil, complete)
 
     expect(#complete).to.equal(0)
     observableA:onNext(1)

@@ -1,17 +1,24 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.amb')
+
 describe('amb', function()
   it('returns nil if it is passed nil', function()
-    expect(Rx.Observable.amb()).to.equal(nil)
+    expect(Observable.amb()).to.equal(nil)
   end)
 
   it('returns the Observable unchanged if it is the only one supplied', function()
-    expect(Rx.Observable.amb(Rx.Observable.fromRange(3))).to.produce(1, 2, 3)
+    expect(Observable.amb(Observable.fromRange(3))).to.produce(1, 2, 3)
   end)
 
   it('produces values from the first Observable to produce a value', function()
-    local a = Rx.Subject.create()
-    local b = Rx.Subject.create()
+    local a = Subject.create()
+    local b = Subject.create()
     local onNext = spy()
-    local observer = Rx.Observer.create(onNext)
+    local observer = Observer.create(onNext)
     local amb = a:amb(b):subscribe(observer)
 
     b:onNext(4)

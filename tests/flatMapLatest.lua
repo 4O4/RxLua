@@ -1,24 +1,31 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.flatMapLatest')
+
 describe('flatMapLatest', function()
   it('produces an error if its parent errors', function()
-    expect(Rx.Observable.throw():flatMapLatest()).to.fail()
+    expect(Observable.throw():flatMapLatest()).to.fail()
   end)
 
   it('produces an error if the callback errors', function()
-    expect(Rx.Observable.fromRange(3):flatMapLatest(error)).to.produce.error()
+    expect(Observable.fromRange(3):flatMapLatest(error)).to.produce.error()
   end)
 
   it('unsubscribes from the source and the projected observable', function()
     local outerUnsubscribe = spy()
-    local outerSubscription = Rx.Subscription.create(outerUnsubscribe)
-    local outer = Rx.Observable.create(function(observer)
+    local outerSubscription = Subscription.create(outerUnsubscribe)
+    local outer = Observable.create(function(observer)
       observer:onNext()
       observer:onCompleted()
       return outerSubscription
     end)
 
     local innerUnsubscribe = spy()
-    local innerSubscription = Rx.Subscription.create(innerUnsubscribe)
-    local inner = Rx.Observable.create(function()
+    local innerSubscription = Subscription.create(innerUnsubscribe)
+    local inner = Observable.create(function()
       return innerSubscription
     end)
 
@@ -29,16 +36,16 @@ describe('flatMapLatest', function()
   end)
 
   it('uses the identity function as the callback if none is specified', function()
-    local observable = Rx.Observable.fromTable({
-      Rx.Observable.fromRange(3),
-      Rx.Observable.fromRange(5)
+    local observable = Observable.fromTable({
+      Observable.fromRange(3),
+      Observable.fromRange(5)
     }):flatMapLatest()
     expect(observable).to.produce(1, 2, 3, 1, 2, 3, 4, 5)
   end)
 
   it('produces values from the most recent projected Observable of the source', function()
-    local children = {Rx.Subject.create(), Rx.Subject.create()}
-    local subject = Rx.Subject.create()
+    local children = {Subject.create(), Subject.create()}
+    local subject = Subject.create()
     local onNext = observableSpy(subject:flatMapLatest(function(i)
       return children[i]
     end))
@@ -58,8 +65,8 @@ describe('flatMapLatest', function()
   end)
 
   it('does not complete if one of the children completes', function()
-    local subject = Rx.Subject.create()
-    local flatMapped = subject:flatMapLatest(function() return Rx.Observable.empty() end)
+    local subject = Subject.create()
+    local flatMapped = subject:flatMapLatest(function() return Observable.empty() end)
     local _, _, onCompleted = observableSpy(flatMapped)
     subject:onNext()
     expect(#onCompleted).to.equal(0)

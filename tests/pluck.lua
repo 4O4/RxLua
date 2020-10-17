@@ -1,6 +1,12 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+
+require('reactivex.operators.pluck')
+
 describe('pluck', function()
   it('returns the original observable if no key is specified', function()
-    local observable = Rx.Observable.of(7)
+    local observable = Observable.of(7)
     expect(observable:pluck()).to.equal(observable)
   end)
 
@@ -10,12 +16,12 @@ describe('pluck', function()
       { color = 'green' },
       { color = 'blue' }
     }
-    expect(Rx.Observable.fromTable(t, ipairs):pluck('color')).to.produce('red', 'green', 'blue')
+    expect(Observable.fromTable(t, ipairs):pluck('color')).to.produce('red', 'green', 'blue')
   end)
 
   it('supports numeric pluckage', function()
     local t = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
-    expect(Rx.Observable.fromTable(t, ipairs):pluck(2)).to.produce(2, 5, 8)
+    expect(Observable.fromTable(t, ipairs):pluck(2)).to.produce(2, 5, 8)
   end)
 
   it('supports deep pluckage', function()
@@ -23,16 +29,16 @@ describe('pluck', function()
       { name = { first = 'Robert', last = 'Paulsen' } },
       { name = { first = 'Bond', last = 'James Bond' } }
     }
-    expect(Rx.Observable.fromTable(t, ipairs):pluck('name', 'first')).to.produce('Robert', 'Bond')
+    expect(Observable.fromTable(t, ipairs):pluck('name', 'first')).to.produce('Robert', 'Bond')
   end)
 
   it('errors if a key does not exist', function()
     local california = {}
-    expect(Rx.Observable.fromTable(california):pluck('water')).to.fail()
+    expect(Observable.fromTable(california):pluck('water')).to.fail()
   end)
 
   it('respects metatables', function()
     local t = setmetatable({}, {__index = {a = 'b'}})
-    expect(Rx.Observable.of(t):pluck('a')).to.produce('b')
+    expect(Observable.of(t):pluck('a')).to.produce('b')
   end)
 end)

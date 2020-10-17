@@ -1,20 +1,28 @@
+local Observer = require("reactivex.observer")
+local Subject = require("reactivex.subjects.subject")
+local Subscription = require("reactivex.subscription")
+
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+
 describe('Subject', function()
   describe('create', function()
     it('returns a Subject', function()
-      expect(Rx.Subject.create()).to.be.an(Rx.Subject)
+      expect(Subject.create()).to.be.an(Subject)
     end)
   end)
 
   describe('subscribe', function()
     it('returns a Subscription', function()
-      local subject = Rx.Subject.create()
-      local observer = Rx.Observer.create()
-      expect(subject:subscribe(observer)).to.be.an(Rx.Subscription)
+      local subject = Subject.create()
+      local observer = Observer.create()
+      expect(subject:subscribe(observer)).to.be.an(Subscription)
     end)
 
     it('accepts 3 functions as arguments', function()
       local onNext, onCompleted = spy(), spy()
-      local subject = Rx.Subject.create()
+      local subject = Subject.create()
       subject:subscribe(onNext, nil, onCompleted)
       subject:onNext(5)
       subject:onCompleted()
@@ -28,11 +36,11 @@ describe('Subject', function()
       local observers = {}
       local spies = {}
       for i = 1, 2 do
-        observers[i] = Rx.Observer.create()
+        observers[i] = Observer.create()
         spies[i] = spy(observers[i], '_onNext')
       end
 
-      local subject = Rx.Subject.create()
+      local subject = Subject.create()
       subject:subscribe(observers[1])
       subject:subscribe(observers[2])
       subject:onNext(1)
@@ -43,8 +51,8 @@ describe('Subject', function()
     end)
 
     it('can be called using function syntax', function()
-      local observer = Rx.Observer.create()
-      local subject = Rx.Subject.create()
+      local observer = Observer.create()
+      local subject = Subject.create()
       local onNext = spy(observer, 'onNext')
       subject:subscribe(observer)
       subject(4)
@@ -57,11 +65,11 @@ describe('Subject', function()
       local observers = {}
       local spies = {}
       for i = 1, 2 do
-        observers[i] = Rx.Observer.create(nil, function() end, nil)
+        observers[i] = Observer.create(nil, function() end, nil)
         spies[i] = spy(observers[i], '_onError')
       end
 
-      local subject = Rx.Subject.create()
+      local subject = Subject.create()
       subject:subscribe(observers[1])
       subject:subscribe(observers[2])
       subject:onError('ohno')
@@ -75,11 +83,11 @@ describe('Subject', function()
       local observers = {}
       local spies = {}
       for i = 1, 2 do
-        observers[i] = Rx.Observer.create(nil, function() end, nil)
+        observers[i] = Observer.create(nil, function() end, nil)
         spies[i] = spy(observers[i], '_onCompleted')
       end
 
-      local subject = Rx.Subject.create()
+      local subject = Subject.create()
       subject:subscribe(observers[1])
       subject:subscribe(observers[2])
       subject:onCompleted()

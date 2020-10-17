@@ -1,11 +1,17 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+
+require('reactivex.operators.retry')
+
 describe('retry', function()
   it('produces values normally if no errors occur', function()
-    expect(Rx.Observable.fromRange(3):retry()).to.produce(1, 2, 3)
+    expect(Observable.fromRange(3):retry()).to.produce(1, 2, 3)
   end)
 
   local function createBadObservable(errorCount)
     local i = 0
-    return Rx.Observable.create(function(observer)
+    return Observable.create(function(observer)
       i = i + 1
       observer:onNext()
       if i <= errorCount then

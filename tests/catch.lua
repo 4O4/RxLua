@@ -1,11 +1,18 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.catch')
+
 describe('catch', function()
   it('ignores errors if no handler is specified', function()
-    expect(Rx.Observable.throw():catch()).to.produce.nothing()
+    expect(Observable.throw():catch()).to.produce.nothing()
   end)
 
   it('continues producing values from the specified observable if the source errors', function()
-    local handler = Rx.Subject.create()
-    local observable = Rx.Observable.create(function(observer)
+    local handler = Subject.create()
+    local observable = Observable.create(function(observer)
       observer:onNext(1)
       observer:onNext(2)
       observer:onError('ohno')
@@ -25,18 +32,18 @@ describe('catch', function()
   end)
 
   it('allows a function as an argument', function()
-    local handler = function() return Rx.Observable.empty() end
-    expect(Rx.Observable.throw():catch(handler)).to.produce.nothing()
+    local handler = function() return Observable.empty() end
+    expect(Observable.throw():catch(handler)).to.produce.nothing()
   end)
 
   it('calls onError if the supplied function errors', function()
     local handler = error
-    expect(Rx.Observable.throw():catch(handler)).to.produce.error()
+    expect(Observable.throw():catch(handler)).to.produce.error()
   end)
 
   it('calls onComplete when the parent completes', function()
     local onComplete = spy()
-    Rx.Observable.throw():catch():subscribe(nil, nil, onComplete)
+    Observable.throw():catch():subscribe(nil, nil, onComplete)
     expect(#onComplete).to.equal(1)
   end)
 end)

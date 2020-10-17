@@ -1,15 +1,22 @@
+local Observable = require("reactivex.observable")
+local Observer = require("reactivex.observer")
+local Subscription = require("reactivex.subscription")
+local Subject = require("reactivex.subjects.subject")
+
+require('reactivex.operators.distinct')
+
 describe('distinct', function()
   it('does not produce the same value twice', function()
-    local observable = Rx.Observable.fromTable({1, 1, 2, 1, 3, 3, 2, 1, 4}, ipairs):distinct()
+    local observable = Observable.fromTable({1, 1, 2, 1, 3, 3, 2, 1, 4}, ipairs):distinct()
     expect(observable).to.produce(1, 2, 3, 4)
   end)
 
   it('produces an error if its parent errors', function()
-    expect(Rx.Observable.throw():distinct()).to.produce.error()
+    expect(Observable.throw():distinct()).to.produce.error()
   end)
 
   it('completes when its parent completes', function()
-    local subject = Rx.Subject.create()
+    local subject = Subject.create()
     local onCompleted = spy()
     subject:distinct():subscribe(nil, nil, onCompleted)
     expect(#onCompleted).to.equal(0)
