@@ -6,6 +6,7 @@ function main()
   runnerUtils.initializeRunner()
 
   local withCoverage = false
+  local withLcovReport = false
   local testVariants = {
     {
       testFile = 'util', 
@@ -96,6 +97,10 @@ function main()
       os.remove("luacov.stats.out")
       withCoverage = true
     end
+
+    if arg[2] == "--with-lcov-report" then
+      withLcovReport = true
+    end
   
     for i, variant in ipairs(testVariants) do
       runnerUtils.runTestFile(variant.testFile, withCoverage and variant.luacovConfig or nil)
@@ -106,9 +111,10 @@ function main()
     end
   end
   
-  if withCoverage then
+  if withLcovReport then
     local luacovRunner = runnerUtils.getLuacovRunner(".luacov")
     luacovRunner.run_report()
+    os.execute("mkdir -p .tmp && rm -rf .tmp/coverage && genhtml luacov.report.out -o .tmp/coverage")
   end
   
   local red = string.char(27) .. '[31m'
