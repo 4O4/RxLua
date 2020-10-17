@@ -322,4 +322,5 @@ function testHelpers.createSingleUseOperator(operatorName, observerFactoryFn)
   return fakeOperator
 end
 
+local unpack = table.unpack or unpack
 main(unpack(arg))
