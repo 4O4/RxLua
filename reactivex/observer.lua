@@ -21,26 +21,32 @@ function Observer.create(...)
   self._onNext = Observer.EMPTY._onNext
   self._onError = Observer.EMPTY._onError
   self._onCompleted = Observer.EMPTY._onCompleted
+  self._rawCallbacks = {}
 
   if argsCount > 0 then
     if util.isa(destinationOrNext, Observer) then
       self._onNext = destinationOrNext._onNext
       self._onError = destinationOrNext._onError
       self._onCompleted = destinationOrNext._onCompleted
+      self._rawCallbacks = destinationOrNext._rawCallbacks
     else
+      self._rawCallbacks.onNext = destinationOrNext
+      self._rawCallbacks.onError = onError
+      self._rawCallbacks.onCompleted = onCompleted
+
       self._onNext = function (...)
-        if destinationOrNext then
-          destinationOrNext(...)
+        if self._rawCallbacks.onNext then
+          self._rawCallbacks.onNext(...)
         end
       end
       self._onError = function (...)
-        if onError then
-          onError(...)
+        if self._rawCallbacks.onError then
+          self._rawCallbacks.onError(...)
         end
       end
       self._onCompleted = function ()
-        if onCompleted then
-          onCompleted()
+        if self._rawCallbacks.onCompleted then
+          self._rawCallbacks.onCompleted()
         end
       end
     end
