@@ -1,8 +1,11 @@
 include = {
-   ".*/.hererocks/share/lua/[^/]+/reactivex"
+   "^.*/reactivex"
 }
+
 coveralls = {
    pathcorrect = {
-      {".*/.hererocks/share/lua/[^/]+/reactivex", "reactivex"};
+      {"^.*/reactivex", "reactivex"};
    },
 }
+
+reporter = "lcosv"
