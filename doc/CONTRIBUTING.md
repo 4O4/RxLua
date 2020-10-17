@@ -63,11 +63,23 @@ lua tests/runner.lua average
 Install  `luacov` and `luacov-reporter-lcov` from luarocks, and also install `lcov` on your system. Then run:
 
 ```
-lua tests/runner.lua --with-coverage
-genhtml luacov.report.out -o .tmp/coverage
+lua tests/runner.lua --with-coverage --with-lcov-report
 ```
 
-This will generate nice HTML reports with lcov/
+This will generate nice HTML reports with `lcov`.<br>
+
+To collect coverage stats only without generating a report, use:
+
+```
+lua tests/runner.lua --with-coverage
+```
+
+After that you can manually proces the output with other tools. To generate report manually with lcov for example, you can run:
+
+```
+luacov -r lcov
+genhtml luacov.report.out -o .tmp/coverage
+```
 
 ### Test helpers
 
